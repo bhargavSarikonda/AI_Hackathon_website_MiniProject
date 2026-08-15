@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Login | Hackathon 2026</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="page">
+  <nav class="navbar">
+    <div class="container">
+      <a href="../index.html" class="logo">Hackathon 2026</a>
+      <div class="nav-links">
+        <a href="../index.html">Home</a>
+        <a href="../register.html">Register</a>
+        <a href="login.html">Admin</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+    <section class="page-header">
+      <h1>Admin Login</h1>
+      <p>Sign in to view and export student registrations.</p>
+    </section>
+
+    <section class="form-card" style="max-width: 480px;">
+      <div id="login-alert" class="alert" role="alert"></div>
+
+      <form id="login-form" novalidate>
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label for="username">Username</label>
+          <input type="text" id="username" name="username" required autocomplete="username">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required autocomplete="current-password">
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="login-btn">Login</button>
+      </form>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2026 Hackathon Registration Portal. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="../js/admin.js"></script>
+</body>
+</html>

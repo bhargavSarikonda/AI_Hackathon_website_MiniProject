@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register | Innovate AI Hackathon 2026</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="page">
+  <nav class="navbar">
+    <div class="container nav-wrap">
+      <a href="index.html" class="brand" aria-label="Innovate AI Hackathon home">
+        <img src="assets/logo.svg" alt="Innovate AI Hackathon logo" class="brand-logo" />
+        <span>Innovate AI Hackathon 2026</span>
+      </a>
+      <div class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="register.html">Register</a>
+        <a href="admin/login.html">Admin</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+    <section class="page-header">
+      <h1>Student Registration</h1>
+      <p>Register for the Innovate AI Hackathon 2026 — fill in your details below.</p>
+    </section>
+
+    <section class="form-card">
+      <div id="form-alert" class="alert" role="alert"></div>
+
+      <form id="registration-form" novalidate>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="full_name">Full Name *</label>
+            <input type="text" id="full_name" name="full_name" required>
+            <span class="field-error" data-error-for="full_name"></span>
+          </div>
+
+          <div class="form-group">
+            <label for="email">Email *</label>
+            <input type="email" id="email" name="email" required>
+            <span class="field-error" data-error-for="email"></span>
+          </div>
+
+          <div class="form-group">
+            <label for="phone">Phone *</label>
+            <input type="tel" id="phone" name="phone" required>
+            <span class="field-error" data-error-for="phone"></span>
+          </div>
+
+          <div class="form-group">
+            <label for="college">College / University *</label>
+            <input type="text" id="college" name="college" required>
+            <span class="field-error" data-error-for="college"></span>
+          </div>
+
+          <div class="form-group">
+            <label for="college_id">College ID (optional)</label>
+            <input type="text" id="college_id" name="college_id" placeholder="Student ID or registration number">
+          </div>
+
+          <div class="form-group">
+            <label for="branch">Branch / Department</label>
+            <input type="text" id="branch" name="branch">
+          </div>
+
+          <div class="form-group">
+            <label for="team_name">Team Name (optional)</label>
+            <input type="text" id="team_name" name="team_name" placeholder="If you're registering with a team">
+          </div>
+
+          <div class="form-group">
+            <label for="team_size">Team Size</label>
+            <select id="team_size" name="team_size" required>
+              <option value="">Select team size</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+            </select>
+            <span class="field-error" data-error-for="team_size"></span>
+          </div>
+
+          <div class="form-group">
+            <label for="year">Year of Study</label>
+            <select id="year" name="year">
+              <option value="">Select year</option>
+              <option value="1st Year">1st Year</option>
+              <option value="2nd Year">2nd Year</option>
+              <option value="3rd Year">3rd Year</option>
+              <option value="4th Year">4th Year</option>
+              <option value="Postgraduate">Postgraduate</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="tshirt_size">T-shirt Size</label>
+            <select id="tshirt_size" name="tshirt_size">
+              <option value="">Select size (optional)</option>
+              <option value="XS">XS</option>
+              <option value="S">S</option>
+              <option value="M">M</option>
+              <option value="L">L</option>
+              <option value="XL">XL</option>
+              <option value="XXL">XXL</option>
+            </select>
+          </div>
+
+          <div class="form-group full-width">
+            <label for="skills">Skills / Tech Stack</label>
+            <textarea id="skills" name="skills" placeholder="e.g. Python, React, UI/UX, Machine Learning"></textarea>
+          </div>
+
+          <div class="form-group full-width">
+            <label for="github_url">GitHub / Portfolio URL</label>
+            <input type="url" id="github_url" name="github_url" placeholder="https://github.com/yourusername">
+            <span class="field-error" data-error-for="github_url"></span>
+          </div>
+        </div>
+
+        <div style="margin-top: 1.5rem;">
+          <button type="submit" class="btn btn-primary" id="submit-btn">Submit Registration</button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2026 Hackathon Registration Portal. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="js/register.js"></script>
+</body>
+</html>

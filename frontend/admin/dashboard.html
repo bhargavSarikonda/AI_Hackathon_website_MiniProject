@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard | Hackathon 2026</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="page">
+  <nav class="navbar">
+    <div class="container">
+      <a href="../index.html" class="logo">Hackathon 2026</a>
+      <div class="nav-links">
+        <a href="../index.html">Home</a>
+        <a href="../register.html">Register</a>
+        <button id="logout-btn" class="btn btn-secondary">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+    <section class="page-header">
+      <h1>Admin Dashboard</h1>
+      <p>View all student registrations and export data.</p>
+    </section>
+
+    <section class="dashboard-card">
+      <div id="dashboard-alert" class="alert" role="alert"></div>
+
+      <div class="toolbar">
+        <div class="search-box">
+          <input type="search" id="search-input" placeholder="Search by name, email, or college...">
+        </div>
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+          <button id="refresh-btn" class="btn btn-secondary">Refresh</button>
+          <button id="export-btn" class="btn btn-primary">Export CSV</button>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>College</th>
+              <th>Branch</th>
+              <th>Year</th>
+              <th>Registered</th>
+            </tr>
+          </thead>
+          <tbody id="registrations-body">
+            <tr>
+              <td colspan="8" class="empty-state">Loading registrations...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2026 Hackathon Registration Portal. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="../js/admin.js"></script>
+</body>
+</html>

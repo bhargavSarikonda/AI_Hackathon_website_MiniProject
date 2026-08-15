@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Login | Hackathon 2026</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="page">
+  <nav class="navbar">
+    <div class="container nav-wrap">
+      <a href="index.html" class="brand" aria-label="Hackathon 2026 home">
+        <img src="assets/logo.svg" alt="Hackathon logo" class="brand-logo" />
+        <span>Hackathon 2026</span>
+      </a>
+      <div class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="register.html" target="_blank" rel="noopener noreferrer">Register</a>
+        <a href="login.html" class="active">Login</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+    <section class="page-header">
+      <h1>User Login</h1>
+      <p>Sign in using your registered email and mobile number to receive an OTP.</p>
+    </section>
+
+    <section class="form-card" style="max-width: 540px; margin: 0 auto;">
+      <div id="login-alert" class="alert" role="alert"></div>
+
+      <form id="otp-form" novalidate>
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label for="email">Registered Email *</label>
+          <input type="email" id="email" name="email" required autocomplete="email">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+          <label for="mobile">Registered Mobile Number *</label>
+          <input type="tel" id="mobile" name="mobile" required autocomplete="tel" placeholder="e.g. 9876543210">
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap;">
+          <button type="button" class="btn btn-secondary" id="send-otp-btn">Send OTP</button>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+          <label for="otp">Enter OTP *</label>
+          <input type="text" id="otp" name="otp" placeholder="6-digit OTP" maxlength="6" inputmode="numeric">
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="verify-btn">Verify & Login</button>
+      </form>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2026 Hackathon Registration Portal. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="js/login.js"></script>
+</body>
+</html>

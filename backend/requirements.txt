@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+pydantic[email]
+python-multipart
+python-dotenv
+bcrypt==4.0.1
+passlib[bcrypt]==1.7.4
+openpyxl
+requests
