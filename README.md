@@ -13,10 +13,67 @@ A student registration website for hackathon events with an admin dashboard to v
 ## Project Structure
 
 ```
-frontend/     # HTML pages, CSS, and client-side JS
-backend/      # FastAPI REST API
-server/       # Express static server + API proxy
-data/         # SQLite database (created on first run)
+AI_Hackathon_website_MiniProject/
+├── backend/                              # FastAPI Python Backend
+│   ├── rag/                              # Modular RAG AI Chatbot Package
+│   │   ├── __init__.py                   # Package exports & public API
+│   │   ├── ingestion.py                  # Stage 1: Document parser & dataset reader
+│   │   ├── chunker.py                    # Stage 2: Semantic chunker & metadata tagger
+│   │   ├── embedder.py                   # Stage 3: High-dimensional vector embedder
+│   │   ├── vector_db.py                  # Stage 4: ChromaDB vector database store
+│   │   ├── retriever.py                  # Stage 4.5: Hybrid vector search retriever
+│   │   ├── generator.py                  # Stage 5: Grounded answer synthesis & LLM integration
+│   │   ├── knowledge_base.py             # Rulebook dataset ingestor & metadata
+│   │   ├── router.py                     # FastAPI Chat endpoints (/api/chat)
+│   │   ├── schemas.py                    # Pydantic chat request/response models
+│   │   └── service.py                    # RAG singleton service orchestrator
+│   ├── auth.py                           # Admin session verification & auth
+│   ├── database.py                       # SQLite database manager & table schemas
+│   ├── main.py                           # FastAPI application entrypoint
+│   ├── models.py                         # Pydantic schemas for registrations & admin
+│   └── requirements.txt                  # Python package dependencies
+├── data/                                 # Persistent Database & Vector Stores
+│   ├── chroma_db/                        # ChromaDB persistent vector database
+│   ├── hackathon.db                      # SQLite database file
+│   └── Innovate_AI_Hackathon_Rulebook_DataSet.docx # Official Hackathon Rulebook Dataset
+├── frontend/                             # Client-side Static Web Application
+│   ├── admin/                            # Admin Portal
+│   │   ├── dashboard.html                # Admin dashboard to search & export data
+│   │   └── login.html                    # Admin login page
+│   ├── assets/                           # Media & Visual Assets
+│   │   ├── company-logos/                # Sponsor & partner logos
+│   │   ├── background.svg                # Background graphic
+│   │   └── logo.svg                      # Event & animated Chatbot logo
+│   ├── css/                              # Stylesheets
+│   │   ├── chatbot.css                   # Glassmorphic floating AI Chatbot styles
+│   │   └── style.css                     # Global design system & layout styles
+│   ├── js/                               # Client-side Logic
+│   │   ├── admin.js                      # Admin authentication & dashboard logic
+│   │   ├── chatbot.js                    # Floating AI Chatbot UI widget & API client
+│   │   ├── login.js                      # User OTP authentication logic
+│   │   └── register.js                   # Registration form validation & submission
+│   ├── index.html                        # Landing page (event info, timeline, rules)
+│   ├── login.html                        # Participant OTP login page
+│   ├── register.html                     # Student registration form
+│   └── user-dashboard.html               # Participant post-login dashboard
+├── scripts/                              # Utility & Management Scripts
+│   ├── check_notifications.py            # Check registration notification records
+│   ├── check_notifications_verbose.py    # Detailed notification log inspector
+│   ├── download_export.py                # Helper script to download Excel export
+│   ├── download_export_try.py            # Diagnostic export test script
+│   ├── set_admin_password.py             # Reset/update admin credentials
+│   ├── show_admins.py                    # Display admin user accounts
+│   └── tmp_test_registration.py          # Script to simulate test registration
+├── server/                               # Node.js Express Web Server
+│   ├── node_modules/                     # Node.js dependencies
+│   ├── package.json                      # Node packages & start scripts
+│   ├── package-lock.json                 # Dependency lockfile
+│   └── server.js                         # Static file server & API proxy (/api/* -> :8000)
+├── .env.example                          # Example environment variables template
+├── .env                                  # Local environment configuration
+├── .gitignore                            # Git ignored files & patterns
+├── main.py                               # Root launcher script (runs Python + Node concurrently)
+└── README.md                             # Project documentation
 ```
 
 ## Setup
@@ -42,6 +99,8 @@ Optional environment variables (defaults shown):
 ```bash
 set ADMIN_USERNAME=admin
 set ADMIN_PASSWORD=admin123
+set OPENAI_API_KEY=your_openai_api_key   # Optional: for generative LLM RAG mode
+set GEMINI_API_KEY=your_gemini_api_key   # Optional: for Google Gemini RAG mode
 ```
 
 ### 2. Node.js Server
@@ -88,6 +147,8 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 |------|-----|
 | Landing | `/index.html` |
 | Register | `/register.html` |
+| User Login | `/login.html` |
+| User Dashboard | `/user-dashboard.html` |
 | Admin Login | `/admin/login.html` |
 | Admin Dashboard | `/admin/dashboard.html` |
 
@@ -101,8 +162,38 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 | POST | `/api/admin/logout` | Admin logout |
 | GET | `/api/registrations` | List registrations (admin) |
 | GET | `/api/registrations/export` | Export Excel `.xlsx` (admin) |
+| POST | `/api/chat` | RAG AI Chatbot query processing |
+| GET | `/api/chat/faq` | Curated FAQ quick-start prompts |
 
 API docs available at [http://localhost:8000/docs](http://localhost:8000/docs) when the Python server is running.
+
+## 🤖 RAG AI Chatbot Architecture
+
+The AI Chatbot is built with a modular 5-stage Retrieval-Augmented Generation (RAG) pipeline grounded in the official event rulebook:
+
+```
+[Source Data (.docx)] 
+       │
+       ▼
+[1. Ingestion]  --> Reads raw paragraphs from data/Innovate_AI_Hackathon_Rulebook_DataSet.docx
+       │
+       ▼
+[2. Chunking]   --> Splits into semantic chunks with metadata (section_id, category, keywords)
+       │
+       ▼
+[3. Embedding]  --> Generates high-dimensional vector embeddings with synonym expansion
+       │
+       ▼
+[4. Vector DB]  --> ChromaDB persistent vector database (data/chroma_db) with Cosine Index
+       │
+       ▼
+[5. Generator]  --> Grounded synthesis (OpenAI online mode / Offline local rulebook mode)
+```
+
+### Dual Mode Execution:
+- **🌐 Online Mode:** Set `OPENAI_API_KEY=sk...` or `GEMINI_API_KEY=...` in `.env` to generate natural conversational answers using `gpt-4o-mini` with exact rulebook section citations.
+- **🔌 Offline Mode:** Keep API keys commented (`# OPENAI_API_KEY=...`) in `.env` to run 100% locally and privately using the ChromaDB semantic chunk retriever.
+
 
 ## Default Admin Credentials
 

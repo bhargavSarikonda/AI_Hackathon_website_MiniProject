@@ -1,6 +1,12 @@
+"""
+Database Management Module
+Handles SQLite connection lifecycle, schema initialization, and admin credentials.
+"""
+
 import os
 import sqlite3
 from pathlib import Path
+from typing import Any
 
 from dotenv import load_dotenv
 from passlib.context import CryptContext
@@ -18,6 +24,7 @@ DEFAULT_ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "change_me")
 
 
 def get_connection() -> sqlite3.Connection:
+    """Creates and returns a SQLite database connection with row factory enabled."""
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -26,6 +33,7 @@ def get_connection() -> sqlite3.Connection:
 
 
 def init_db() -> None:
+    """Initializes tables and default admin user if they do not exist."""
     with get_connection() as conn:
         conn.executescript(
             """
@@ -39,6 +47,10 @@ def init_db() -> None:
                 year        TEXT,
                 skills      TEXT,
                 github_url  TEXT,
+                college_id  TEXT,
+                team_name   TEXT,
+                team_size   INTEGER,
+                tshirt_size TEXT,
                 created_at  TEXT DEFAULT (datetime('now'))
             );
 
@@ -54,40 +66,17 @@ def init_db() -> None:
                 created_at TEXT DEFAULT (datetime('now')),
                 FOREIGN KEY (admin_id) REFERENCES admin_users(id)
             );
-            """
-        )
 
-        # Table to record notifications sent to admin for new registrations
-        conn.execute(
-            """
             CREATE TABLE IF NOT EXISTS admin_notifications (
-                id             INTEGER PRIMARY KEY AUTOINCREMENT,
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
                 registration_id INTEGER NOT NULL,
-                created_at     TEXT DEFAULT (datetime('now')),
+                created_at      TEXT DEFAULT (datetime('now')),
                 FOREIGN KEY (registration_id) REFERENCES registrations(id)
             );
             """
         )
 
-        # Ensure new columns exist in registrations for extended fields
-        existing_cols = {col[1] for col in conn.execute("PRAGMA table_info(registrations)").fetchall()}
-        alter_stmts = []
-        if 'college_id' not in existing_cols:
-            alter_stmts.append("ALTER TABLE registrations ADD COLUMN college_id TEXT;")
-        if 'team_name' not in existing_cols:
-            alter_stmts.append("ALTER TABLE registrations ADD COLUMN team_name TEXT;")
-        if 'team_size' not in existing_cols:
-            alter_stmts.append("ALTER TABLE registrations ADD COLUMN team_size INTEGER;")
-        if 'tshirt_size' not in existing_cols:
-            alter_stmts.append("ALTER TABLE registrations ADD COLUMN tshirt_size TEXT;")
-
-        for stmt in alter_stmts:
-            try:
-                conn.execute(stmt)
-            except Exception:
-                # ignore if unable to add (already exists or other minor issue)
-                pass
-
+        # Seed or update default admin user
         admin = conn.execute(
             "SELECT id FROM admin_users WHERE username = ?",
             (DEFAULT_ADMIN_USERNAME,),
@@ -99,35 +88,18 @@ def init_db() -> None:
                 "INSERT INTO admin_users (username, password_hash) VALUES (?, ?)",
                 (DEFAULT_ADMIN_USERNAME, password_hash),
             )
-
-        # If ADMIN_PASSWORD env is provided, override the admin user's password hash
-        env_admin_pwd = os.getenv("ADMIN_PASSWORD")
-        if env_admin_pwd:
-            # update password for DEFAULT_ADMIN_USERNAME if exists, else first admin
-            admin_row = conn.execute(
-                "SELECT id FROM admin_users WHERE username = ?",
-                (DEFAULT_ADMIN_USERNAME,),
-            ).fetchone()
-
-            if admin_row:
+        else:
+            env_admin_pwd = os.getenv("ADMIN_PASSWORD")
+            if env_admin_pwd and env_admin_pwd != "change_me":
                 pwd_hash = pwd_context.hash(env_admin_pwd)
                 conn.execute(
                     "UPDATE admin_users SET password_hash = ? WHERE id = ?",
-                    (pwd_hash, admin_row["id"]),
+                    (pwd_hash, admin["id"]),
                 )
-            else:
-                first = conn.execute(
-                    "SELECT id FROM admin_users ORDER BY id LIMIT 1"
-                ).fetchone()
-                if first:
-                    pwd_hash = pwd_context.hash(env_admin_pwd)
-                    conn.execute(
-                        "UPDATE admin_users SET password_hash = ? WHERE id = ?",
-                        (pwd_hash, first["id"]),
-                    )
 
         conn.commit()
 
 
-def row_to_dict(row: sqlite3.Row) -> dict:
-    return dict(row)
+def row_to_dict(row: sqlite3.Row | None) -> dict[str, Any]:
+    """Converts a sqlite3.Row instance into a standard Python dictionary."""
+    return dict(row) if row is not None else {}

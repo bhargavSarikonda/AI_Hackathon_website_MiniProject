@@ -1,16 +1,18 @@
-import csv
-import io
+"""
+FastAPI Backend Application Entrypoint
+Handles user registration, admin authentication, Excel exports, and RAG Chatbot routing.
+"""
+
 import os
 import sqlite3
 import smtplib
+from contextlib import asynccontextmanager
 from email.message import EmailMessage
 from io import BytesIO
-from base64 import b64encode
+from typing import Any
 
-import openpyxl
 from openpyxl import Workbook
 import requests
-
 from fastapi import Depends, FastAPI, Header, HTTPException, status
 from fastapi.responses import StreamingResponse
 
@@ -23,18 +25,80 @@ from models import (
     RegistrationCreate,
     RegistrationResponse,
 )
+from rag import router as chat_router, get_rag_service
 
-app = FastAPI(title="Hackathon Registration API", version="1.0.0")
 
-
-@app.on_event("startup")
-def on_startup() -> None:
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Initializes SQLite database and 5-stage RAG pipeline upon startup."""
     init_db()
+    get_rag_service()
+    yield
+
+
+app = FastAPI(
+    title="Innovate AI Hackathon 2026 API",
+    version="1.0.0",
+    lifespan=lifespan
+)
+
+# Mount modular RAG AI Chatbot router
+app.include_router(chat_router)
+
+
+def _send_registration_notifications(data: dict[str, Any]) -> None:
+    """Dispatches confirmation email and SMS to the registered student if credentials are configured."""
+    application_id = data.get("id")
+    email_addr = data.get("email")
+    phone = data.get("phone")
+
+    subject = "Your Innovate AI Hackathon 2026 Application ID"
+    body = (
+        f"Thank you for registering for Innovate AI Hackathon 2026.\n"
+        f"Your Application ID is: {application_id}.\n"
+        f"Keep this for your records."
+    )
+
+    # 1. SMTP Email
+    smtp_host = os.getenv("SMTP_HOST")
+    smtp_port = int(os.getenv("SMTP_PORT", "587")) if os.getenv("SMTP_PORT") else None
+    smtp_user = os.getenv("SMTP_USER")
+    smtp_pass = os.getenv("SMTP_PASS")
+    from_addr = os.getenv("FROM_EMAIL", smtp_user)
+
+    if smtp_host and smtp_user and smtp_pass and email_addr:
+        try:
+            msg = EmailMessage()
+            msg["Subject"] = subject
+            msg["From"] = from_addr
+            msg["To"] = email_addr
+            msg.set_content(body)
+
+            with smtplib.SMTP(smtp_host, smtp_port or 587) as server:
+                server.starttls()
+                server.login(smtp_user, smtp_pass)
+                server.send_message(msg)
+        except Exception:
+            pass
+
+    # 2. Twilio SMS
+    twilio_sid = os.getenv("TWILIO_ACCOUNT_SID")
+    twilio_token = os.getenv("TWILIO_AUTH_TOKEN")
+    twilio_from = os.getenv("TWILIO_FROM")
+
+    if twilio_sid and twilio_token and twilio_from and phone:
+        try:
+            url = f"https://api.twilio.com/2010-04-01/Accounts/{twilio_sid}/Messages.json"
+            payload = {"To": phone, "From": twilio_from, "Body": body}
+            requests.post(url, data=payload, auth=(twilio_sid, twilio_token), timeout=10)
+        except Exception:
+            pass
 
 
 @app.get("/api/health")
-def health_check() -> dict:
-    return {"status": "ok"}
+def health_check() -> dict[str, str]:
+    """Basic health check endpoint."""
+    return {"status": "ok", "service": "Innovate AI Hackathon API"}
 
 
 @app.post(
@@ -43,12 +107,14 @@ def health_check() -> dict:
     status_code=status.HTTP_201_CREATED,
 )
 def register_student(payload: RegistrationCreate) -> RegistrationResponse:
+    """Registers a new hackathon participant."""
     try:
         with get_connection() as conn:
             cursor = conn.execute(
                 """
                 INSERT INTO registrations (
-                    full_name, email, phone, college, branch, year, skills, github_url, college_id, team_name, team_size, tshirt_size
+                    full_name, email, phone, college, branch, year, skills,
+                    github_url, college_id, team_name, team_size, tshirt_size
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
@@ -60,16 +126,16 @@ def register_student(payload: RegistrationCreate) -> RegistrationResponse:
                     payload.year.strip() if payload.year else None,
                     payload.skills.strip() if payload.skills else None,
                     payload.github_url.strip() if payload.github_url else None,
-                    payload.college_id.strip() if getattr(payload, 'college_id', None) else None,
-                    payload.team_name.strip() if getattr(payload, 'team_name', None) else None,
-                    int(payload.team_size) if getattr(payload, 'team_size', None) else None,
-                    payload.tshirt_size.strip() if getattr(payload, 'tshirt_size', None) else None,
+                    payload.college_id.strip() if payload.college_id else None,
+                    payload.team_name.strip() if payload.team_name else None,
+                    int(payload.team_size) if payload.team_size else None,
+                    payload.tshirt_size.strip() if payload.tshirt_size else None,
                 ),
             )
             conn.commit()
             registration_id = cursor.lastrowid
 
-            # Record notification for admin (so admin can see which registration triggered the message)
+            # Record admin notification
             try:
                 conn.execute(
                     "INSERT INTO admin_notifications (registration_id) VALUES (?)",
@@ -77,77 +143,17 @@ def register_student(payload: RegistrationCreate) -> RegistrationResponse:
                 )
                 conn.commit()
             except Exception:
-                # non-fatal, keep going
                 pass
 
-            # Send application id to user via email and SMS (if configured)
-            try:
-                row = conn.execute(
-                    "SELECT * FROM registrations WHERE id = ?",
-                    (registration_id,),
-                ).fetchone()
-                data = row_to_dict(row)
-                application_id = data.get("id")
-                email_addr = data.get("email")
-                phone = data.get("phone")
+            row = conn.execute(
+                "SELECT * FROM registrations WHERE id = ?",
+                (registration_id,),
+            ).fetchone()
+            data = row_to_dict(row)
 
-                # Compose message
-                subject = "Your Innovate AI Hackathon 2026 Application ID"
-                body = f"Thank you for registering for Innovate AI Hackathon 2026. Your Application ID is: {application_id}. Keep this for your records."
+            # Send async confirmation
+            _send_registration_notifications(data)
 
-                # Send email if SMTP configured
-                smtp_host = os.getenv("SMTP_HOST")
-                smtp_port = int(os.getenv("SMTP_PORT", "587")) if os.getenv("SMTP_PORT") else None
-                smtp_user = os.getenv("SMTP_USER")
-                smtp_pass = os.getenv("SMTP_PASS")
-                from_addr = os.getenv("FROM_EMAIL", smtp_user)
-
-                if smtp_host and smtp_user and smtp_pass and email_addr:
-                    try:
-                        msg = EmailMessage()
-                        msg["Subject"] = subject
-                        msg["From"] = from_addr
-                        msg["To"] = email_addr
-                        msg.set_content(body)
-
-                        server = smtplib.SMTP(smtp_host, smtp_port or 587)
-                        server.starttls()
-                        server.login(smtp_user, smtp_pass)
-                        server.send_message(msg)
-                        server.quit()
-                    except Exception:
-                        # swallow email errors for now
-                        pass
-
-                # Send SMS via Twilio if configured
-                twilio_sid = os.getenv("TWILIO_ACCOUNT_SID")
-                twilio_token = os.getenv("TWILIO_AUTH_TOKEN")
-                twilio_from = os.getenv("TWILIO_FROM")
-                if twilio_sid and twilio_token and twilio_from and phone:
-                    try:
-                        url = f"https://api.twilio.com/2010-04-01/Accounts/{twilio_sid}/Messages.json"
-                        payload = {
-                            "To": phone,
-                            "From": twilio_from,
-                            "Body": body,
-                        }
-                        auth = (twilio_sid, twilio_token)
-                        requests.post(url, data=payload, auth=auth, timeout=10)
-                    except Exception:
-                        pass
-
-            except Exception:
-                # non-fatal; registration succeeded even if notification failed
-                pass
-
-            # ensure row is fetched for response (if not already fetched above)
-            try:
-                row
-            except NameError:
-                row = conn.execute(
-                    "SELECT * FROM registrations WHERE id = ?",
-                    (registration_id,),
-                ).fetchone()
     except sqlite3.IntegrityError as exc:
         if "UNIQUE constraint failed: registrations.email" in str(exc):
             raise HTTPException(
@@ -159,11 +165,12 @@ def register_student(payload: RegistrationCreate) -> RegistrationResponse:
             detail="Registration failed",
         ) from exc
 
-    return RegistrationResponse(**row_to_dict(row))
+    return RegistrationResponse(**data)
 
 
 @app.post("/api/admin/login", response_model=AdminLoginResponse)
 def admin_login(payload: AdminLoginRequest) -> AdminLoginResponse:
+    """Authenticates an admin and issues a session token."""
     admin_id = auth.verify_admin_credentials(payload.username, payload.password)
     if admin_id is None:
         raise HTTPException(
@@ -180,6 +187,7 @@ def admin_logout(
     authorization: str | None = Header(default=None),
     _: int = Depends(auth.require_admin),
 ) -> MessageResponse:
+    """Logs out an admin and invalidates the session token."""
     token = None
     if authorization and authorization.startswith("Bearer "):
         token = authorization[7:].strip()
@@ -192,6 +200,7 @@ def admin_logout(
 
 @app.get("/api/registrations", response_model=list[RegistrationResponse])
 def list_registrations(_: int = Depends(auth.require_admin)) -> list[RegistrationResponse]:
+    """Returns all student registrations (Admin only)."""
     with get_connection() as conn:
         rows = conn.execute(
             "SELECT * FROM registrations ORDER BY created_at DESC"
@@ -202,54 +211,41 @@ def list_registrations(_: int = Depends(auth.require_admin)) -> list[Registratio
 
 @app.get("/api/registrations/export")
 def export_registrations(_: int = Depends(auth.require_admin)) -> StreamingResponse:
+    """Exports all student registrations as an Excel (.xlsx) spreadsheet."""
     with get_connection() as conn:
         rows = conn.execute(
             "SELECT * FROM registrations ORDER BY created_at DESC"
         ).fetchall()
-    # Create Excel workbook in-memory
+
     wb = Workbook()
     ws = wb.active
     ws.title = "Registrations"
 
     headers = [
-        "ID",
-        "Full Name",
-        "Email",
-        "Phone",
-        "College",
-        "College ID",
-        "Branch",
-        "Year",
-        "Team Name",
-        "Team Size",
-        "T-shirt Size",
-        "Skills",
-        "GitHub URL",
-        "Registered At",
+        "ID", "Full Name", "Email", "Phone", "College", "College ID",
+        "Branch", "Year", "Team Name", "Team Size", "T-shirt Size",
+        "Skills", "GitHub URL", "Registered At"
     ]
-
     ws.append(headers)
 
     for row in rows:
         data = row_to_dict(row)
-        ws.append(
-            [
-                data.get("id"),
-                data.get("full_name"),
-                data.get("email"),
-                data.get("phone"),
-                data.get("college"),
-                data.get("college_id") or "",
-                data.get("branch") or "",
-                data.get("year") or "",
-                data.get("team_name") or "",
-                data.get("team_size") if data.get("team_size") is not None else "",
-                data.get("tshirt_size") or "",
-                data.get("skills") or "",
-                data.get("github_url") or "",
-                data.get("created_at"),
-            ]
-        )
+        ws.append([
+            data.get("id"),
+            data.get("full_name"),
+            data.get("email"),
+            data.get("phone"),
+            data.get("college"),
+            data.get("college_id") or "",
+            data.get("branch") or "",
+            data.get("year") or "",
+            data.get("team_name") or "",
+            data.get("team_size") if data.get("team_size") is not None else "",
+            data.get("tshirt_size") or "",
+            data.get("skills") or "",
+            data.get("github_url") or "",
+            data.get("created_at"),
+        ])
 
     bio = BytesIO()
     wb.save(bio)
