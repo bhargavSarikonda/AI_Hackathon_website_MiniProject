@@ -336,8 +336,15 @@ textarea {
 }
 
 .btn-secondary {
-  background: #e2e8f0;
-  color: var(--text);
+  background: rgba(54, 208, 255, 0.12);
+  color: #36d0ff;
+  border: 1px solid rgba(54, 208, 255, 0.35);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: rgba(54, 208, 255, 0.25);
+  color: #ffffff;
+  border-color: var(--primary);
 }
 
 .btn-danger {
@@ -388,8 +395,20 @@ textarea {
   min-width: 220px;
 }
 
+.search-box input {
+  background: rgba(4, 18, 30, 0.85);
+  color: #f8fdff;
+  border: 1px solid rgba(111, 191, 255, 0.35);
+}
+
+.search-box input::placeholder {
+  color: #7fa6bc;
+}
+
 .table-wrapper {
   overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid rgba(111, 191, 255, 0.2);
 }
 
 table {
@@ -400,14 +419,23 @@ table {
 th,
 td {
   text-align: left;
-  padding: 0.85rem;
-  border-bottom: 1px solid var(--border);
-  vertical-align: top;
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid rgba(111, 191, 255, 0.18);
+  vertical-align: middle;
 }
 
 th {
-  background: var(--surface-muted);
-  font-size: 0.9rem;
+  background: rgba(10, 39, 64, 0.95);
+  color: #36d0ff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 2px solid rgba(54, 208, 255, 0.4);
+}
+
+tbody tr:hover {
+  background: rgba(54, 208, 255, 0.05);
 }
 
 .empty-state {
