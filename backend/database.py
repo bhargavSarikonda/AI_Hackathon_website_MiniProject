@@ -16,7 +16,11 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-DATA_DIR = BASE_DIR / "data"
+if os.getenv("VERCEL"):
+    DATA_DIR = Path("/tmp")
+else:
+    DATA_DIR = BASE_DIR / "data"
+
 DB_PATH = DATA_DIR / "hackathon.db"
 
 DEFAULT_ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")

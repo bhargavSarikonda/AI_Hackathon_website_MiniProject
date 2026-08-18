@@ -38,8 +38,11 @@ class ChromaVectorStore:
         self._index: dict[str, VectorRecord] = {}
 
         if persist_directory is None:
-            base_dir = Path(__file__).resolve().parent.parent.parent
-            self.persist_directory = base_dir / "data" / "chroma_db"
+            if os.getenv("VERCEL"):
+                self.persist_directory = Path("/tmp") / "chroma_db"
+            else:
+                base_dir = Path(__file__).resolve().parent.parent.parent
+                self.persist_directory = base_dir / "data" / "chroma_db"
         else:
             self.persist_directory = Path(persist_directory)
 

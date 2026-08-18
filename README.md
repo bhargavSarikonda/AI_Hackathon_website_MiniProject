@@ -246,3 +246,27 @@ cd backend
 cd server
 npm start
 ```
+
+## 🚀 Deploy to Vercel
+
+The repository is pre-configured with `vercel.json`, `api/index.py`, and root `requirements.txt` for 1-click deployment on [Vercel](https://vercel.com).
+
+### Option 1: Deploy via Vercel Web Dashboard (Recommended)
+1. Push your code to GitHub.
+2. Go to [vercel.com](https://vercel.com) and click **"Add New Project"** -> **"Import Git Repository"**.
+3. Select this repository.
+4. (Optional) In **Environment Variables**, add:
+   * `ADMIN_USERNAME` = `admin`
+   * `ADMIN_PASSWORD` = `your_strong_password`
+   * `OPENAI_API_KEY` = `sk-...` *(optional, for online LLM mode)*
+5. Click **"Deploy"**!
+
+### Option 2: Deploy via Vercel CLI
+```powershell
+# Install Vercel CLI
+npm i -g vercel
+
+# Deploy
+vercel
+```
+
